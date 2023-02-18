@@ -1,0 +1,102 @@
+---
+title: "ps5-markdown-plots"
+author: "chloe abrahams"
+date: "2023-02-17"
+output: html_document
+---
+## 1: Load and Check Data
+```{r}
+library(tidyverse)
+```
+
+2: 
+```{r}
+gapminder <- read_delim("C:/Users/chloe/OneDrive/UW/INFO201/data/gapminder.csv.bz2")
+gapminder %>% 
+  dim()
+```
+This dataset contains `r nrow(gapminder)` rows and
+  `r ncol(gapminder)` columns.
+
+3: 
+```{r}
+gapminder %>% 
+  sample_n(6)
+```
+the data looks good 
+
+
+## 2: Descriptive Statistics
+1:
+```{r}
+num_iso3 <- gapminder %>% 
+  distinct(iso3) %>% 
+  nrow()
+
+num_iso2 <- gapminder %>% 
+  distinct(iso2) %>% 
+  nrow()
+
+num_names <- gapminder %>% 
+  distinct(name) %>% 
+  nrow()
+
+cat("There are", num_iso3, "unique iso3 codes in the dataset.\n")
+cat("There are", num_iso2, "unique iso2 codes in the dataset.\n")
+cat("There are", num_names, "unique country names in the dataset.\n")
+```
+2a: 
+```{r}
+iso2_names <- gapminder %>% 
+  group_by(iso2) %>% 
+  summarize(num_names = n_distinct(name))
+
+multi_names <- iso2_names %>% 
+  filter(num_names > 1)
+
+multi_names_countries <- gapminder %>% 
+  filter(!is.na(iso2) %in% !is.na(multi_names$iso2)) %>% 
+  select(iso2, name) %>% 
+  distinct() %>% 
+  arrange(iso2, name)
+
+print(multi_names_countries)
+```
+
+2b: 
+```{r}
+name_iso3 <- gapminder %>% 
+  group_by(name) %>% 
+  summarize(num_iso3 = n_distinct(iso3))
+
+multi_iso3_names <- name_iso3 %>% 
+  filter(num_iso3 > 1)
+
+cat("\nCountry names with more than one iso3 code:\n")
+multi_iso3_countries <- gapminder %>% 
+  filter(!is.na(name) %in% !is.na(multi_iso3_names$name)) %>% 
+  select(name, iso3) %>% 
+  distinct() %>% 
+  arrange(name, iso3)
+print(multi_iso3_countries)
+```
+
+3: 
+```{r}
+max_year <- max(gapminder$time, na.rm = TRUE)
+cat("The max year in the dataset:", max_year, "\n")
+
+min_year <- min(gapminder$time, na.rm = TRUE)
+cat("The min year in the dataset:", min_year, "\n")
+```
+## CO2 Emissions
+1: 
+```{r}
+gapminder %>% 
+  group_by(time) %>% 
+  summarize(num_missing_co2 = sum(is.na(co2)), num_missing_co2_PC = sum(is.na(co2_PC))) %>% 
+  mutate(total_missing = num_missing_co2 + num_missing_co2_PC) %>% 
+  arrange(desc(total_missing)) %>% 
+  head(5)
+```
+
