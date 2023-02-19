@@ -100,3 +100,262 @@ gapminder %>%
   head(5)
 ```
 
+
+
+2: 
+```{r}
+selected_countries <- c("United States of America", "China", "India", "Japan", "Germany")
+gapminder %>% 
+  filter(!is.na(co2)) %>% 
+  filter(name %in% selected_countries) %>% 
+  ggplot(aes(time, co2, col = factor(name))) + 
+  geom_line() + 
+  labs(x = "Year", y = "Total CO2 Emissions (million metric tons)", 
+       col = "Country")
+```
+
+
+
+3: 
+```{r}
+selected_countries <- c("United States of America", "China", "India", "Japan", "Germany")
+gapminder %>% 
+  filter(!is.na(co2_PC)) %>% 
+  filter(name %in% selected_countries) %>% 
+  ggplot(aes(time, co2_PC, col = factor(name))) + 
+  geom_line() + 
+  labs(x = "Year", y = "Total CO2 Emissions per Capita (million metric tons)", 
+       col = "Country")
+```
+
+
+
+All countries save for China and India increased their CO2 emissions 
+when analyzing emissions per capita. Because per capita means per 
+person, this speaks to the size of China and India's populations - 
+the other countries are releasing more CO2 emissions per person. 
+
+4. 
+```{r}
+continent_avg <- gapminder %>% 
+  filter(!is.na(co2_PC), !is.na(region)) %>% 
+  group_by(region) %>% 
+  summarize(avg_co2_PC = mean(co2_PC, na.rm = TRUE))
+
+print(continent_avg)
+```
+
+
+
+Europe has the highest per capita emissions out of all the regions, and the 
+more developed continents (Europe, Americas, Asia) have more average 
+emissions than Oceania and Africa, with less development and/or less people. 
+
+
+5. 
+```{r}
+data_filtered <- gapminder %>% 
+  filter(!is.na(co2), !is.na(region)) %>% 
+  filter(time %in% c(1960, 2016))
+
+continent_avg <- data_filtered %>% 
+  group_by(region, time) %>% 
+  summarize(avg_co2_PC = mean(co2_PC, na.rm = TRUE))
+
+ggplot(continent_avg, aes(x = region, y = avg_co2_PC, fill = as.factor(time))) +
+  geom_col(position = "dodge") +
+  labs(x = "Continent", y = "Average CO2 Emissions per Capita", fill = "Year") +
+  ggtitle("Average CO2 Emissions per Capita Across Continents") +
+  theme_minimal() 
+```
+
+
+
+6. 
+Instead of using 2019, I chose to use 2016 because there 
+were less NA values. 
+```{r}
+data_2016 <- gapminder %>% 
+  filter(time == 2016)
+
+grouped_data <- data_2016 %>% 
+  group_by(region, name) %>% 
+  summarize(avg_co2_PC = mean(co2_PC, na.rm = TRUE))
+
+ordered_data <- grouped_data %>% 
+  arrange(region, desc(avg_co2_PC))
+
+top_three <- ordered_data %>% 
+  group_by(region) %>% 
+  top_n(3, wt = avg_co2_PC)
+
+bottom_three <- ordered_data %>% 
+  group_by(region) %>% 
+  top_n(-3, wt = avg_co2_PC)
+
+print(top_three)
+print(bottom_three)
+
+```
+## GDP per Capita
+
+1: 
+```{r}
+data_1960 <- gapminder %>%
+  filter(!is.na(region), !is.na(GDP_PC), !is.na(lifeExpectancy)) %>% 
+  filter(time == 1960)
+
+ggplot(data = data_1960, aes(x = GDP_PC, y = lifeExpectancy, color = region, 
+                             size = 1)) +
+  geom_point() +
+  scale_color_manual(values = c("#FF6666", "#66CCFF", "#66FF66", "#FFCC66", "#CC66FF", "#CCCCCC")) +
+  labs(x = "GDP per capita", y = "Life expectancy", title = "GDP per capita vs. Life expectancy by country (1960)") +
+  theme_bw()
+
+```
+
+
+The countries with a lower GDP per capita cluster together with the lowest 
+life expectancies, while the countries with the highest GDP per capitas are
+more spread out iwth the highest life expectancies. 
+
+2. 
+```{r}
+data_2019 <- gapminder %>%
+  filter(!is.na(region), !is.na(GDP_PC), !is.na(lifeExpectancy)) %>% 
+  filter(time == 2019)
+
+ggplot(data = data_2019, aes(x = GDP_PC, y = lifeExpectancy, color = region, 
+                             size = 1)) +
+  geom_point() +
+  scale_color_manual(values = c("#FF6666", "#66CCFF", "#66FF66", "#FFCC66", "#CC66FF", "#CCCCCC")) +
+  labs(x = "GDP per capita", y = "Life expectancy", title = "GDP per capita vs. Life expectancy by country (2019)") +
+  theme_bw()
+```
+
+
+
+3. There are significantly less countries clustered in the lowest range of 
+life expectancy, 0-60, with the majority now clustering between 65-80. 
+This shows a global improvement in health with an increase in overall 
+global life expectancy, indicating major global development.
+
+4.
+```{r}
+data_1960 <- gapminder %>% 
+  filter(time == 1960)
+
+data_2019 <- gapminder %>% 
+  filter(time == 2019)
+
+life_exp_1960 <- data_1960 %>% 
+  group_by(region) %>% 
+  summarize(avg_life_exp = mean(lifeExpectancy, na.rm = TRUE))
+
+life_exp_2019 <- data_2019 %>% 
+  group_by(region) %>% 
+  summarize(avg_life_exp = mean(lifeExpectancy, na.rm = TRUE))
+
+life_exp_1960
+life_exp_2019
+```
+Yes, there is a significant increase between the life expectancies of 
+1960 and 2019, consistent with what is shown on the 2 scatter plots. 
+
+5. 
+```{r}
+grouped_data <- gapminder %>% 
+  filter(time == 1960 | time == 2019, !is.na(time), !is.na(region)) %>% 
+  group_by(region, time) %>% 
+  summarize(avg_le = mean(lifeExpectancy, na.rm = TRUE))
+
+grouped_data_lag <- grouped_data %>% 
+  group_by(region) %>% 
+  mutate(lag_le = lag(avg_le, order_by = time))
+
+growth_data <- grouped_data_lag %>% 
+  filter(!is.na(lag_le)) %>%
+  mutate(growth_rate = (avg_le - lag_le) / lag_le)
+
+avg_growth <- growth_data %>% 
+  group_by(region) %>% 
+  summarize(avg_growth_rate = mean(growth_rate, na.rm = TRUE)) %>% 
+  arrange(desc(avg_growth_rate))
+
+print(avg_growth)
+```
+Africa and Asia have the highest growth rates, possible due to the fact
+that they include some of the least developed regions in the world, where
+high fertility rates are common. On the other hand, the overall more developed
+Americas and Europe have the lowest growth rate, likely due to low fertility
+rates. 
+
+6. 
+```{r}
+data_1960 <- gapminder %>% 
+  filter(time == 1960, !is.na(GDP_PC))
+
+data_2019 <- gapminder %>% 
+  filter(time == 2019, !is.na(GDP_PC))
+
+combined_data <- rbind(data_1960, data_2019)
+combined_data$time <- factor(combined_data$time)
+ggplot(combined_data, aes(x = GDP_PC, fill = time)) +
+  geom_histogram(binwidth = 5000, alpha = 0.5, position = "dodge") +
+  scale_fill_manual(values = c("red3", "lightblue")) +
+  xlab("GDP per capita") +
+  ylab("Count") +
+  ggtitle("Histogram of GDP per capita for 1960 and 2019")
+```
+
+
+
+7. 
+```{r}
+ranked_data <- gapminder %>% 
+  group_by(time) %>% 
+  mutate(rank_LE = rank(desc(lifeExpectancy), na.last = "keep", ties.method ="min")) %>% 
+ filter(time %in% c(1960, 2019))
+
+us_data <- ranked_data %>% 
+  filter(name == "United States of America")
+
+min_ranks <- us_data %>% 
+  summarize(min_rank = min(rank_LE))
+
+print(min_ranks)
+
+```
+my code is running correctly, i think there might be an issue with 
+the data? i couldn't figure out why I wasn't getting 17
+
+8. 
+```{r}
+data_sub <- gapminder %>% 
+  filter(time %in% c(1960, 2019)) 
+
+n_countries <- data_sub %>% 
+  group_by(time) %>% 
+  summarize(n_countries = n_distinct(name))
+
+#print(n_countries)
+
+ranked_data <- data_sub %>% 
+  group_by(time) %>% 
+ # mutate(rank_LE = rank(desc(lifeExpectancy), na.last = "keep"))
+  mutate(rank_LE = rank(desc(lifeExpectancy), na.last = TRUE))
+
+rel_rank <- ranked_data %>% 
+  inner_join(n_countries, by = "time") %>% 
+  mutate(rel_rank = rank_LE / n_countries)
+
+us_data <- rel_rank %>% 
+  filter(name == "United States of America") %>% 
+  select(name, rel_rank)
+#summarise(us_data = min(rel_rank))
+
+print(us_data)
+
+```
+this corresponds with my answer to #7, for the same reason, 
+I'm just slightly off 
